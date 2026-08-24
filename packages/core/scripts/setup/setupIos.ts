@@ -5,8 +5,6 @@ import {
   addUploadBuildPhase,
   addEmbraceInitializerSwift,
   iosInitializeEmbrace,
-  iOSPodfilePatch,
-  iosPodfileKSCrashPatch,
   patchXcodeBundlePhase,
 } from "./ios";
 import {apiToken, iosAppID, iosProjectFolderName, packageJSON} from "./common";
@@ -21,8 +19,6 @@ const IOS_REGISTER_FIELDS = [
 const IOS_STEPS = [
   addEmbraceInitializerSwift,
   iosInitializeEmbrace,
-  iOSPodfilePatch,
-  iosPodfileKSCrashPatch,
   patchXcodeBundlePhase,
   addUploadBuildPhase,
 ];
