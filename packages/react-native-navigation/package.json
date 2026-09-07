@@ -1,6 +1,6 @@
 {
   "name": "@embrace-io/react-native-navigation",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "A React Native wrapper for the OTel Navigation instrumentation library that creates telemetry data representing Navigation changes",
   "dependencies": {
     "@opentelemetry/api": "^1.9.0"
@@ -38,7 +38,7 @@
     "typescript": "^5.6.3"
   },
   "embrace": {
-    "iosVersion": "6.19.0",
+    "iosVersion": "6.22.0",
     "androidVersion": "8.4.0",
     "otelSwiftVersion": "2.1.1"
   },

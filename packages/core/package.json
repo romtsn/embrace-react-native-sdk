@@ -1,6 +1,6 @@
 {
   "name": "@embrace-io/react-native",
-  "version": "7.0.0",
+  "version": "7.1.0",
   "description": "A React Native wrapper for the Embrace SDK",
   "dependencies": {
     "glob": "^13.0.6",
@@ -23,7 +23,8 @@
     "android/gradle.properties",
     "android/dependencies.gradle",
     "ios",
-    "RNEmbraceCore.podspec"
+    "RNEmbraceCore.podspec",
+    "src/NativeEmbraceManager.ts"
   ],
   "author": "Embrace <support@embrace.io> (https://embrace.io/)",
   "bugs": {
@@ -68,8 +69,16 @@
     "typescript": "^5.6.3"
   },
   "embrace": {
-    "iosVersion": "6.19.0",
+    "iosVersion": "6.22.0",
     "androidVersion": "8.4.0",
     "otelSwiftVersion": "2.1.1"
+  },
+  "codegenConfig": {
+    "name": "RNEmbraceCoreSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "io.embrace.rnembracecore"
+    }
   }
 }
