@@ -13,6 +13,9 @@ const INIT_SDK_CONFIG = {
   sdkConfig: {ios: {appId: "abc12"}},
 };
 
+const JS_START_DEPRECATION_WARNING =
+  "[Embrace] Starting the native SDK from JavaScript (including `sdkConfig.ios` and `sdkConfig.exporters`) is deprecated and will be removed in the next major release. Start Embrace in native code instead: https://embrace.io/docs/react-native/integration/session-reporting/#start-embrace-sdk-in-the-native-side";
+
 const mockSetReactNativeVersion = jest
   .fn()
   .mockReturnValue(Promise.resolve(true));
@@ -85,20 +88,12 @@ jest.mock("react-native", () => ({
 const mockReactNative = jest.requireMock("react-native");
 
 describe("SDK initialization", () => {
-  let mockConsoleWarn: jest.SpyInstance;
-  let mockConsoleInfo: jest.SpyInstance;
-  let mockConsoleError: jest.SpyInstance;
-
   const mockIsDev = (isDev: boolean) =>
     // @ts-expect-error __DEV__ isn't expected on `global`'s type, but it does exist here since jest adds it to
     // simulate a React Native environment
     jest.replaceProperty(global, "__DEV__", isDev);
 
   beforeEach(() => {
-    mockConsoleWarn = jest.spyOn(console, "warn").mockImplementation(m => m);
-    mockConsoleInfo = jest.spyOn(console, "log").mockImplementation(m => m);
-    mockConsoleError = jest.spyOn(console, "error").mockImplementation(m => m);
-
     mockIsDev(false);
   });
 
@@ -154,8 +149,8 @@ describe("SDK initialization", () => {
       await waitFor(() => {
         expect(mockPreviousHandler).toHaveBeenCalledWith(err, true);
         expect(mockLogUnhandledJSException).toHaveBeenCalled();
-        expect(mockConsoleWarn).toHaveBeenCalledTimes(1);
-        expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledTimes(2);
+        expect(console.warn).toHaveBeenCalledWith(
           "[Embrace] Failed to log exception",
         );
       });
@@ -266,7 +261,7 @@ describe("SDK initialization", () => {
       });
       await waitFor(() => {
         expect(isStarted).toBe(true);
-        expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           "[Embrace] we were unable to setup tracking of unhandled promise rejections.",
         );
         expect(mockLogMessageWithSeverityAndProperties).toHaveBeenCalledWith(
@@ -276,6 +271,18 @@ describe("SDK initialization", () => {
           expect.any(String),
           true,
         );
+      });
+    });
+  });
+
+  describe("Deprecations", () => {
+    test("warns when the native SDK is started from JS", async () => {
+      mockIsStarted.mockReturnValueOnce(false);
+      const isStarted = await initialize(INIT_SDK_CONFIG);
+
+      await waitFor(() => {
+        expect(isStarted).toBe(true);
+        expect(console.warn).toHaveBeenCalledWith(JS_START_DEPRECATION_WARNING);
       });
     });
   });
@@ -298,8 +305,8 @@ describe("SDK initialization", () => {
         expect(mockSetReactNativeSDKVersion).toHaveBeenCalledWith(
           expect.any(String),
         );
-        expect(mockConsoleInfo).toHaveBeenCalledTimes(1);
-        expect(mockConsoleInfo).toHaveBeenCalledWith(
+        expect(console.log).toHaveBeenCalledTimes(1);
+        expect(console.log).toHaveBeenCalledWith(
           "[Embrace] native SDK was started",
         );
       });
@@ -318,7 +325,10 @@ describe("SDK initialization", () => {
           expect.any(String),
         );
         expect(mockStart).not.toHaveBeenCalled();
-        expect(mockConsoleInfo).not.toHaveBeenCalled();
+        expect(console.log).not.toHaveBeenCalled();
+        expect(console.warn).not.toHaveBeenCalledWith(
+          JS_START_DEPRECATION_WARNING,
+        );
       });
     });
 
@@ -337,12 +347,12 @@ describe("SDK initialization", () => {
 
       await waitFor(() => {
         // since it's android and there is no `ios.appId` it should not log this message
-        expect(mockConsoleInfo).not.toHaveBeenCalledWith(
+        expect(console.log).not.toHaveBeenCalledWith(
           "[Embrace] 'sdkConfig.ios.appId' not found, only custom exporters will be used",
         );
         // embrace manual error + metro exception
-        expect(mockConsoleError).toHaveBeenCalledTimes(2);
-        expect(mockConsoleError).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledTimes(2);
+        expect(console.error).toHaveBeenCalledWith(
           "[Embrace] an error ocurred when checking if `@embrace-io/react-native-otlp` was installed",
         );
         expect(isStarted).toBe(true);
@@ -394,8 +404,8 @@ describe("SDK initialization", () => {
         expect(mockSetReactNativeVersion).not.toHaveBeenCalled();
         expect(mockSetJavaScriptPatchNumber).not.toHaveBeenCalled();
         expect(mockSetReactNativeSDKVersion).not.toHaveBeenCalled();
-        expect(mockConsoleWarn).toHaveBeenCalledTimes(1);
-        expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledTimes(2);
+        expect(console.warn).toHaveBeenCalledWith(
           "[Embrace] 'sdkConfig.ios.appId' is required to initialize Embrace's native SDK if there is no configuration for custom exporters. Please check the Embrace integration docs at https://embrace.io/docs/react-native/integration/",
         );
       });
@@ -407,8 +417,8 @@ describe("SDK initialization", () => {
       await waitFor(() => {
         expect(isStarted).toBe(true);
         expect(mockStart).toHaveBeenCalledWith({appId: "abc12"});
-        expect(mockConsoleInfo).toHaveBeenCalledTimes(1);
-        expect(mockConsoleInfo).toHaveBeenCalledWith(
+        expect(console.log).toHaveBeenCalledTimes(1);
+        expect(console.log).toHaveBeenCalledWith(
           "[Embrace] native SDK was started",
         );
       });
@@ -423,11 +433,13 @@ describe("SDK initialization", () => {
 
       await waitFor(() => {
         expect(isStarted).toBe(false);
-        expect(mockConsoleWarn).toHaveBeenCalledTimes(2);
-        expect(mockConsoleWarn.mock.calls[0][0]).toBe(
+        expect(console.warn).toHaveBeenCalledTimes(3);
+        expect(console.warn).toHaveBeenNthCalledWith(
+          2,
           "[Embrace] something went wrong in the native side (fake error message)",
         );
-        expect(mockConsoleWarn.mock.calls[1][0]).toBe(
+        expect(console.warn).toHaveBeenNthCalledWith(
+          3,
           "[Embrace] we could not initialize Embrace's native SDK, please check the Embrace integration docs at https://embrace.io/docs/react-native/integration/",
         );
       });
@@ -448,7 +460,8 @@ describe("SDK initialization", () => {
       await waitFor(() => {
         expect(isStarted).toBe(true);
         expect(mockSetJavaScriptBundlePath).toHaveBeenCalledWith("found");
-        expect(mockConsoleWarn).not.toHaveBeenCalled();
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(JS_START_DEPRECATION_WARNING);
       });
     });
 
@@ -458,7 +471,8 @@ describe("SDK initialization", () => {
       await waitFor(() => {
         expect(isStarted).toBe(true);
         expect(mockSetJavaScriptBundlePath).not.toHaveBeenCalled();
-        expect(mockConsoleWarn).not.toHaveBeenCalled();
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(JS_START_DEPRECATION_WARNING);
       });
     });
 
@@ -468,7 +482,7 @@ describe("SDK initialization", () => {
       await waitFor(() => {
         expect(isStarted).toBe(true);
         expect(mockSetJavaScriptBundlePath).not.toHaveBeenCalled();
-        expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect(console.warn).toHaveBeenCalledWith(
           "[Embrace] we were unable to set the JSBundle path automatically. Please configure this manually to enable crash symbolication. For more information see https://embrace.io/docs/react-native/integration/upload-symbol-files/#pointing-the-embrace-sdk-to-the-javascript-bundle.",
         );
         expect(mockLogMessageWithSeverityAndProperties).toHaveBeenCalledWith(
